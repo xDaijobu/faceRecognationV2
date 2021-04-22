@@ -19,6 +19,10 @@ namespace faceRecognationV2.Views
         void OnCameraClicked(object sender, EventArgs eventArgs)
         {
             cameraPreview.CameraClick.Execute(null);
+            cameraPreview.PictureFinished += new Action(async () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Fire !");
+            });
         }
     }
 }

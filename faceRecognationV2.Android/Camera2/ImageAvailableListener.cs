@@ -25,6 +25,9 @@ namespace faceRecognationV2.Droid.Camera2
                 //diremark dl
                 //Photo?.Invoke(this, imageData);
 
+
+                //OnImageAvailable-> call processImage
+
             }
             catch (Exception)
             {

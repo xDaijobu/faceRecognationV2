@@ -4,14 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     >
-  <faceRecognation2.Droid.CustomViews.AutoFitTextureView
+  <faceRecognationV2.Droid.CustomViews.AutoFitTextureView
         android:id="@+id/CameraTexture"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
          />
-    <faceRecognation2.Droid.CustomViews.FaceBoundsView
+    <faceRecognationV2.Droid.CustomViews.FaceBoundsView
         android:id="@+id/FaceDetectBounds"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:alpha="0.9"
         />
 </FrameLayout>

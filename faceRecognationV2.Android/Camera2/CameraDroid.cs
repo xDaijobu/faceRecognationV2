@@ -59,6 +59,7 @@ namespace faceRecognationV2.Droid.Camera2
         private SurfaceTexture _viewSurface;
         //private readonly TextureView _cameraTexture;
         public readonly AutoFitTextureView _cameraTexture;
+        internal CaptureResult CaptureResult { get; set; }
         public Size _previewSize;
         private readonly Context _context;
         private CameraManager _manager;
@@ -78,9 +79,47 @@ namespace faceRecognationV2.Droid.Camera2
 
         private LensFacing lensFacing;
 
-        private int SensorOrientation;
-
         public FaceBoundsView _faceDetectBoundsView { get; private set; }
+
+        public event EventHandler FrameCountUpdated;
+        protected virtual void OnFrameCountUpdated(EventArgs e)
+        {
+            FrameCountUpdated?.Invoke(this, e);
+        }
+
+        public event EventHandler SensorOrientationUpdated;
+        protected virtual void OnSensorOrientationUpdated(EventArgs e)
+        {
+            SensorOrientationUpdated?.Invoke(this, e);
+        }
+
+        private long _frameCount;
+        public long FrameCount
+        {
+            get
+            {
+                return _frameCount;
+            }
+            set
+            {
+                _frameCount = value;
+                OnFrameCountUpdated(EventArgs.Empty);
+            }
+        }
+
+        private int _sensorOrientation;
+        internal int SensorOrientation
+        {
+            get
+            {
+                return _sensorOrientation;
+            }
+            set
+            {
+                _sensorOrientation = value;
+                OnSensorOrientationUpdated(EventArgs.Empty);
+            }
+        }
 
         public void SetCameraOption(CameraOptions cameraOptions)
         {
@@ -148,6 +187,8 @@ namespace faceRecognationV2.Droid.Camera2
             {
                 CameraCharacteristics chararc = _manager.GetCameraCharacteristics(cameraIds[i]);
 
+                SensorOrientation = (int)chararc.Get(CameraCharacteristics.SensorOrientation);//Back:4032*3024,Front:3264*2448
+
                 int[] faceDetector = (int[])chararc.Get(CameraCharacteristics.StatisticsInfoAvailableFaceDetectModes);
                 int maxFaceDetector = (int)chararc.Get(CameraCharacteristics.StatisticsInfoMaxFaceCount);
 
@@ -180,18 +221,19 @@ namespace faceRecognationV2.Droid.Camera2
             var characteristics = _manager.GetCameraCharacteristics(_cameraId);
             var map = (StreamConfigurationMap)characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
 
-            if (_supportedJpegSizes == null && characteristics != null)
-            {
-                _supportedJpegSizes = ((StreamConfigurationMap)characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap)).GetOutputSizes((int)ImageFormatType.Jpeg);
-            }
+            //if (_supportedJpegSizes == null && characteristics != null)
+            //{
+            //    _supportedJpegSizes = ((StreamConfigurationMap)characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap)).GetOutputSizes((int)ImageFormatType.Jpeg);
+            //}
 
-            if (_supportedJpegSizes != null && _supportedJpegSizes.Length > 0)
-            {
-                _idealPhotoSize = GetOptimalSize(_supportedJpegSizes, 1050, 1400); //MAGIC NUMBER WHICH HAS PROVEN TO BE THE BEST
-            }
+            //if (_supportedJpegSizes != null && _supportedJpegSizes.Length > 0)
+            //{
+            //    _idealPhotoSize = GetOptimalSize(_supportedJpegSizes, 1050, 1400); //MAGIC NUMBER WHICH HAS PROVEN TO BE THE BEST
+            //}
 
-            _imageReader = ImageReader.NewInstance(_idealPhotoSize.Width, _idealPhotoSize.Height, ImageFormatType.Jpeg, 1);
-
+            //_imageReader = ImageReader.NewInstance(_idealPhotoSize.Width, _idealPhotoSize.Height, ImageFormatType.Jpeg, 1);
+            _previewSize = map.GetOutputSizes((int)ImageFormatType.Jpeg)[0];
+            _imageReader = ImageReader.NewInstance(480, 680, ImageFormatType.Jpeg, 1);
             var readerListener = new ImageAvailableListener();
 
             readerListener.Photo += (sender, buffer) =>
@@ -203,7 +245,7 @@ namespace faceRecognationV2.Droid.Camera2
 
             _imageReader.SetOnImageAvailableListener(readerListener, _backgroundHandler);
 
-            _previewSize = GetOptimalSize(map.GetOutputSizes(Class.FromType(typeof(SurfaceTexture))), width, height);
+            //_previewSize = GetOptimalSize(map.GetOutputSizes(Class.FromType(typeof(SurfaceTexture))), width, height);
         }
 
         private bool HasFLash(CameraCharacteristics characteristics)

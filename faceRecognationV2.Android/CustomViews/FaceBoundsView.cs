@@ -1,6 +1,7 @@
 ﻿using System;
 using Android.Content;
 using Android.Graphics;
+using Android.Hardware.Camera2.Params;
 using Android.Util;
 using Android.Views;
 
@@ -27,6 +28,17 @@ namespace faceRecognationV2.Droid.CustomViews
         {
             _paintRect = new Paint();
             _paintText = new Paint();
+
+            _paintRect.Color = Color.Argb(255, 255, 0, 255);
+            _paintRect.StrokeWidth = 3;
+            _paintRect.AntiAlias = true;
+            _paintRect.SetStyle(Paint.Style.Stroke);
+
+            _paintText.Color = Color.Argb(255, 255, 0, 255);
+            _paintText.StrokeWidth = 3;
+            _paintText.AntiAlias = true;
+            _paintText.TextSize = 50;
+            _paintText.SetStyle(Paint.Style.FillAndStroke);
         }
 
         protected override void OnDraw(Canvas canvas)
@@ -34,23 +46,11 @@ namespace faceRecognationV2.Droid.CustomViews
             base.OnDraw(canvas);
 
 
-            if (this._faces?.Length > 0)
+            if (_faces?.Length > 0)
             {
-                _paintRect.Color = Color.Argb(255, 255, 0, 255);
-                _paintRect.StrokeWidth = 3;
-                _paintRect.AntiAlias = true;
-                _paintRect.SetStyle(Paint.Style.Stroke);
-
-                _paintText.Color = Color.Argb(255, 255, 0, 255);
-                _paintText.StrokeWidth = 3;
-                _paintText.AntiAlias = true;
-                _paintText.TextSize = 50;
-                _paintText.SetStyle(Paint.Style.FillAndStroke);
-
                 foreach (var face in _faces)
                 {
                     Rect rect = null;
-                    //https://qiita.com/ohwada/items/94105a7ea134ab4d2734
                     if (_sensorOrientation == 90)
                         rect = new Rect((int)((_previewImageHeight - face.Bounds.Top) * _heightRatio),
                                         (int)(face.Bounds.Left * _widthRatio),
@@ -64,7 +64,7 @@ namespace faceRecognationV2.Droid.CustomViews
 
                     canvas.DrawRect(rect, _paintRect);
 
-                    canvas.DrawText("hello", rect.Right, rect.Bottom, _paintText);
+                    canvas.DrawText("Hai hai hai", rect.Right, rect.Bottom, _paintText);
                 }
             }
             else
@@ -72,6 +72,13 @@ namespace faceRecognationV2.Droid.CustomViews
                 canvas.DrawColor(Color.Transparent, PorterDuff.Mode.Clear);
             }
         }
+
+
+        /// <summary>
+        /// tampung semua Faces (RectF to Rect)
+        /// olah lgi semua Faces (berdsrkan dgn data yg sdh ada)
+        /// baru di draw ?
+        /// </summary>
 
         private Android.Hardware.Camera2.Params.Face[] _faces;
 
@@ -97,6 +104,12 @@ namespace faceRecognationV2.Droid.CustomViews
             _heightRatio = (double)textureWidth / previewImageHeight;
 
             Invalidate();
+        }
+
+
+        public void OnFacesDetected(long currTimestamp, Face[] faces, bool add)
+        {
+
         }
     }
 }
