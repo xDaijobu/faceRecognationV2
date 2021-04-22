@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="faceRecognationV2.Views.HomePage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:faceRecognationV2.ViewModels"
+    x:DataType="viewmodels:HomePageViewModel">
+    <ContentPage.BindingContext>
+        <viewmodels:HomePageViewModel />
+    </ContentPage.BindingContext>
+    <StackLayout Orientation="Vertical">
+        <Label
+            FontSize="Medium"
+            Text="{Binding CameraPermissionStatus}"
+            TextColor="Black" />
+        <Label Text="helloasdasd" />
+        <Label Text="hellozxczxczxcz text a asd" />
+        <Button Command="{Binding RequestCameraPermissionCommand}" Text="Request Permissions" />
+        <Button Clicked="Button_Clicked" Text="Open Camera" />
+
+    </StackLayout>
+</ContentPage>

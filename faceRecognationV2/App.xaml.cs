@@ -1,8 +1,4 @@
-﻿using System;
-using Xamarin.Forms;
-using Xamarin.Forms.Xaml;
-using faceRecognationV2.Services;
-using faceRecognationV2.Views;
+﻿using Xamarin.Forms;
 
 namespace faceRecognationV2
 {
@@ -13,7 +9,6 @@ namespace faceRecognationV2
         {
             InitializeComponent();
 
-            DependencyService.Register<MockDataStore>();
             MainPage = new AppShell();
         }
 

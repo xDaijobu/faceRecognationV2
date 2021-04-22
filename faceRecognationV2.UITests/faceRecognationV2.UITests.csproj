@@ -30,6 +30,9 @@
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.13.1" />
     <PackageReference Include="Xamarin.UITest" Version="3.0.16" />
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\faceRecognationV2.iOS\faceRecognationV2.iOS.csproj">
