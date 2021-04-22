@@ -9,10 +9,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
          />
-    <faceRecognationV2.Droid.CustomViews.FaceBoundsView
+    <faceRecognationV2.Droid.CustomViews.OverlayView
+        android:id="@+id/TrackingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+<!--    <faceRecognationV2.Droid.CustomViews.FaceBoundsView
         android:id="@+id/FaceDetectBounds"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:alpha="0.9"
-        />
+        />-->
 </FrameLayout>

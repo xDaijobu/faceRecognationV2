@@ -14,6 +14,10 @@
   <ItemGroup>
     <Folder Include="Controls\" />
     <Folder Include="Services\" />
-    <Folder Include="Models\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Drawing.Common">
+      <HintPath>..\..\..\..\..\Library\Frameworks\Xamarin.Android.framework\Versions\11.2.99.192\lib\xamarin.android\xbuild-frameworks\MonoAndroid\v1.0\Facades\System.Drawing.Common.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

@@ -8,8 +8,9 @@ namespace faceRecognationV2.Droid.Camera2
     public class CameraCaptureListener : CameraCaptureSession.CaptureCallback
     {
         private readonly CameraDroid owner;
-
+        private long timestamp = 0;
         public long FrameNumber { get; private set; }
+        private bool addPending = true;
 
         public CameraCaptureListener(CameraDroid owner) => this.owner = owner ?? throw new ArgumentNullException("owner");
 
@@ -38,6 +39,7 @@ namespace faceRecognationV2.Droid.Camera2
 
         private void ProcessOnCapture()
         {
+            ++timestamp;
             owner.FrameCount = this.owner.CaptureResult.FrameNumber;
 
             var f = owner.CaptureResult.Get(CaptureResult.StatisticsFaces);
@@ -45,12 +47,15 @@ namespace faceRecognationV2.Droid.Camera2
 
             System.Diagnostics.Debug.WriteLine($"faces: {faces.Length}");
 
-            owner._faceDetectBoundsView.ShowBoundsOnFace(faces,
-                                                              owner._cameraTexture.Width,
-                                                              owner._cameraTexture.Height,
-                                                              owner._previewSize.Width,
-                                                              owner._previewSize.Height,
-                                                              owner.SensorOrientation);
+            //owner._faceDetectBoundsView.ShowBoundsOnFace(faces,
+            //                                                  owner._cameraTexture.Width,
+            //                                                  owner._cameraTexture.Height,
+            //                                                  owner._previewSize.Width,
+            //                                                  owner._previewSize.Height,
+            //                                                  owner.SensorOrientation);
+
+            owner.OnFacesDetected(timestamp, faces, addPending);
+            addPending = false;
         }
 
         //public override void OnCaptureCompleted(CameraCaptureSession session, CaptureRequest request,

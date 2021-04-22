@@ -11,8 +11,13 @@ using Android.Views;
 using Android.Widget;
 using faceRecognationV2.Controls;
 using faceRecognationV2.Droid.CustomViews;
+using faceRecognationV2.Interfaces;
 using Java.Lang;
 using Java.Util;
+using static faceRecognationV2.Interfaces.ISimilarityClassifier;
+using Size = Android.Util.Size;
+using Device = Xamarin.Forms.Device;
+using faceRecognationV2.Droid.Utils;
 
 namespace faceRecognationV2.Droid.Camera2
 {
@@ -36,6 +41,8 @@ namespace faceRecognationV2.Droid.Camera2
 
         #endregion;
 
+        private float MINIMUM_CONFIDENCE_TF_OD_API = 0.5f;
+        private static DetectorMode MODE = DetectorMode.TF_OD_API;
         /// <summary>
         /// The current state of camera state for taking pictures.
         /// </summary>
@@ -121,6 +128,36 @@ namespace faceRecognationV2.Droid.Camera2
             }
         }
 
+        private Matrix frameToCropTransform;
+        private Matrix cropToFrameTransform;
+
+        private long lastProcessingTimeMs;
+        private Bitmap rgbFrameBitmap = null;
+        private Bitmap croppedBitmap = null;
+        private Bitmap cropCopyBitmap = null;
+
+        /// <summary>
+        /// here the preview image is drawn in portrait way
+        /// </summary>
+        internal Bitmap portraitBitmap = null;
+
+        /// <summary>
+        /// here the face is cropped and drawn
+        /// </summary>
+        internal Bitmap faceBitmap = null;
+
+        private MultiBoxTracker tracker;
+        OverlayView trackingOverlay;
+
+        private bool computingDetection = false;
+
+        private int TF_OD_API_INPUT_SIZE = 112;
+        private bool TF_OD_API_IS_QUANTIZED = false;
+        private string TF_OD_API_MODEL_FILE = "mobile_face_net.tflite";
+        private string TF_OD_API_LABELS_FILE = "file:///android_asset/labelmap.txt";
+
+        private ISimilarityClassifier detector;
+
         public void SetCameraOption(CameraOptions cameraOptions)
         {
             lensFacing = (cameraOptions == CameraOptions.Front) ? LensFacing.Front : LensFacing.Back;
@@ -139,14 +176,16 @@ namespace faceRecognationV2.Droid.Camera2
             var view = inflater.Inflate(Resource.Layout.CameraLayout, this);
 
             _cameraTexture = view.FindViewById<AutoFitTextureView>(Resource.Id.CameraTexture);
-            _faceDetectBoundsView = view.FindViewById<FaceBoundsView>(Resource.Id.FaceDetectBounds);
-
+            //_faceDetectBoundsView = view.FindViewById<FaceBoundsView>(Resource.Id.FaceDetectBounds);
+            trackingOverlay = view.FindViewById<OverlayView>(Resource.Id.TrackingOverlay);
 
             _cameraTexture.SurfaceTextureListener = this;
 
             _cameraStateListener = new CameraStateListener { Camera = this };
 
             _cameraCaptureListener = new CameraCaptureListener(this);
+
+            tracker = new MultiBoxTracker(context);
         }
 
         public void OnSurfaceTextureAvailable(SurfaceTexture surface, int width, int height)
@@ -174,6 +213,10 @@ namespace faceRecognationV2.Droid.Camera2
         {
 
         }
+
+
+
+        //public override onpreview
 
         private void SetUpCameraOutputs(int width, int height)
         {
@@ -233,6 +276,38 @@ namespace faceRecognationV2.Droid.Camera2
 
             //_imageReader = ImageReader.NewInstance(_idealPhotoSize.Width, _idealPhotoSize.Height, ImageFormatType.Jpeg, 1);
             _previewSize = map.GetOutputSizes((int)ImageFormatType.Jpeg)[0];
+
+            rgbFrameBitmap = Bitmap.CreateBitmap(_previewSize.Width, _previewSize.Height, Bitmap.Config.Argb8888);
+
+            int targetW, targetH;
+            if (SensorOrientation == 90 || SensorOrientation == 270)
+            {
+                targetH = _previewSize.Width;
+                targetW = _previewSize.Height;
+            }
+            else
+            {
+                targetW = _previewSize.Width;
+                targetH = _previewSize.Height;
+            }
+            int cropW = (int)(targetW / 2.0);
+            int cropH = (int)(targetH / 2.0);
+
+            croppedBitmap = Bitmap.CreateBitmap(cropW, cropH, Bitmap.Config.Argb8888);
+
+            portraitBitmap = Bitmap.CreateBitmap(targetW, targetH, Bitmap.Config.Argb8888);
+            faceBitmap = Bitmap.CreateBitmap(TF_OD_API_INPUT_SIZE, TF_OD_API_INPUT_SIZE, Bitmap.Config.Argb8888);
+
+            frameToCropTransform =
+                    ImageUtils.GetTransformationMatrix(
+                            _previewSize.Width, _previewSize.Height,
+                            cropW, cropH,
+                            SensorOrientation, false /*MAINTAIN_ASPECT*/);
+
+
+            cropToFrameTransform = new Matrix();
+            frameToCropTransform.Invert(cropToFrameTransform);
+
             _imageReader = ImageReader.NewInstance(480, 680, ImageFormatType.Jpeg, 1);
             var readerListener = new ImageAvailableListener();
 
@@ -470,5 +545,258 @@ namespace faceRecognationV2.Droid.Camera2
                 e.PrintStackTrace();
             }
         }
+
+        public void OnFacesDetected(long currTimestamp, Face[] faces, bool add)
+        {
+            cropCopyBitmap = Bitmap.CreateBitmap(croppedBitmap);
+            Canvas canvas = new Canvas(cropCopyBitmap);
+            Paint paint = new Paint();
+            paint.Color = Color.Red;
+            paint.SetStyle(Paint.Style.Stroke);
+            paint.StrokeWidth = 2.0f;
+
+            float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+
+            switch (MODE)
+            {
+                case DetectorMode.TF_OD_API:
+                    minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+                    break;
+            }
+
+            List<Recognition> mappedRecognitions = new List<Recognition>();
+
+            // Note this can be done only once
+            int sourceW = rgbFrameBitmap.Width;
+            int sourceH = rgbFrameBitmap.Height;
+            int targetW = portraitBitmap.Width;
+            int targetH = portraitBitmap.Height;
+
+            Matrix transform = CreateTransform(sourceW, sourceH, targetW, targetH, SensorOrientation);
+            Canvas cv = new Canvas(portraitBitmap);
+
+            // draws the original image in portrait mode.
+            cv.DrawBitmap(rgbFrameBitmap, transform, null);
+
+            Canvas cvFace = new Canvas(faceBitmap);
+
+            bool saved = false;
+
+            foreach (Face face in faces)
+            {
+                System.Diagnostics.Debug.WriteLine($"FACE: {face}");
+                System.Diagnostics.Debug.WriteLine($"Running detection on face {currTimestamp}");
+
+                RectF boundingBox = new RectF(face.Bounds);
+
+                if (boundingBox != null)
+                {
+                    //maps crop coordinates to original
+                    cropToFrameTransform.MapRect(boundingBox);
+
+                    // maps original coordinates to portrait coordinates
+                    RectF faceBB = new RectF(boundingBox);
+                    transform.MapRect(faceBB);
+
+                    // translates portrait to origin and scales to fit input inference size
+                    float sx = ((float)TF_OD_API_INPUT_SIZE) / faceBB.Width();
+                    float sy = ((float)TF_OD_API_INPUT_SIZE) / faceBB.Height();
+                    Matrix matrix = new Matrix();
+                    matrix.PostTranslate(-faceBB.Left, -faceBB.Top);
+                    matrix.PostScale(sx, sy);
+
+                    cvFace.DrawBitmap(portraitBitmap, matrix, null);
+
+                    string label = "";
+                    float confidence = -1f;
+                    int color = Color.Blue;
+                    object extra = null;
+                    Bitmap crop = null;
+
+                    if (add)
+                    {
+                        crop = Bitmap.CreateBitmap(portraitBitmap,
+                            (int)faceBB.Left,
+                            (int)faceBB.Top,
+                            (int)faceBB.Width(),
+                            (int)faceBB.Height());
+                    }
+
+                    long startTime = SystemClock.UptimeMillis();
+                    List<Recognition> resultsAux = detector.RecognizeImage(faceBitmap, add);
+                    lastProcessingTimeMs = SystemClock.UptimeMillis() - startTime;
+
+                    if (resultsAux.Count > 0)
+                    {
+                        Recognition _result = resultsAux[0];
+
+                        extra = _result.Extra;
+                        float conf = _result.Distance.Value;
+                        if (conf < 1.0f)
+                        {
+                            confidence = conf;
+                            label = _result.Title;
+                            if (_result.Id.Equals("0"))
+                                color = Color.Green;
+                            else
+                                color = Color.Red;
+                        }
+                    }
+
+                    if (lensFacing == LensFacing.Front)
+                    {
+                        // camera is frontal so image is flipped horizontally
+                        // flips horizontally
+                        Matrix flip = new Matrix();
+                        if (SensorOrientation == 90 || SensorOrientation == 270)
+                        {
+                            flip.PostScale(1, -1, _previewSize.Width / 2.0f, _previewSize.Height / 2.0f);
+                        }
+                        else
+                        {
+                            flip.PostScale(-1, 1, _previewSize.Width / 2.0f, _previewSize.Height / 2.0f);
+                        }
+                        //flip.postScale(1, -1, targetW / 2.0f, targetH / 2.0f);
+                        flip.MapRect(boundingBox);
+                    }
+
+                    Recognition result = new Recognition("0", label, confidence, boundingBox);
+                    result.Color = color;
+                    result.Location = boundingBox;
+                    result.Extra = extra;
+                    result.Crop = crop;
+                    mappedRecognitions.Add(result);
+                }
+            }
+
+            UpdateResults(currTimestamp, mappedRecognitions);
+        }
+        
+  //      private void updateResults(long currTimestamp, final List<SimilarityClassifier.Recognition> mappedRecognitions)
+  //      {
+
+  //          tracker.trackResults(mappedRecognitions, currTimestamp);
+  //          trackingOverlay.postInvalidate();
+  //          computingDetection = false;
+  //          //adding = false;
+
+
+  //          if (mappedRecognitions.size() > 0)
+  //          {
+  //              LOGGER.i("Adding results");
+  //              SimilarityClassifier.Recognition rec = mappedRecognitions.get(0);
+  //              if (rec.getExtra() != null)
+  //              {
+  //                  showAddFaceDialog(rec);
+  //              }
+
+  //          }
+
+  //          runOnUiThread(
+  //                  new Runnable() {
+  //            @Override
+  //                    public void run()
+  //          {
+  //              showFrameInfo(previewWidth + "x" + previewHeight);
+  //              showCropInfo(croppedBitmap.getWidth() + "x" + croppedBitmap.getHeight());
+  //              showInference(lastProcessingTimeMs + "ms");
+  //          }
+  //      });
+
+  //}
+
+        private void UpdateResults(long currTimestamp, List<Recognition> mappedRecognitions)
+        {
+            tracker.TrackResults(mappedRecognitions, currTimestamp);
+            trackingOverlay.PostInvalidate();
+            computingDetection = false;
+
+            if (mappedRecognitions.Count > 0)
+            {
+                System.Diagnostics.Debug.WriteLine("Adding results");
+
+                Recognition recognition = mappedRecognitions[0];
+                if (recognition.Extra != null)
+                {
+                    ShowAddFaceDialog(recognition);
+                }
+            }
+
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                System.Diagnostics.Debug.WriteLine("ShowFrameInfo: " + _previewSize.Width + "x" + _previewSize.Height);
+                System.Diagnostics.Debug.WriteLine("ShowCropInfo: " + croppedBitmap.Width + "x" + croppedBitmap.Height);
+                System.Diagnostics.Debug.WriteLine("ShowInference: " + lastProcessingTimeMs + "ms");
+                //ShowFrameInfo(_previewSize.Width + "x" + _previewSize.Height); ;
+                //ShowCropInfo(croppedBitmap.Width + "x" + croppedBitmap.Height);
+                //ShowInference(lastProcessingTimeMs + "ms");
+            });
+        }
+
+        private Matrix CreateTransform(int sourceWidth, int sourceHeight, int destinationWidth, int destinationHeight, int applyRotation)
+        {
+            Matrix matrix = new Matrix();
+            if (applyRotation != 0)
+            {
+                if (applyRotation % 90 != 0)
+                    System.Diagnostics.Debug.WriteLine("Rotation of %d % 90 != 0", applyRotation);
+
+                // Tarnslate so center of image is at origin
+                matrix.PostTranslate(-sourceWidth / 2.0f, -sourceHeight / -2.0f);
+
+                // Rotate around origin.
+                matrix.PostRotate(applyRotation);
+            }
+
+            if (applyRotation != 0)
+            {
+                // Translate back from origin centered reference to destination frame.
+                matrix.PostTranslate(destinationWidth / 2.0f, destinationHeight / 2.0f);
+            }
+
+            return matrix;
+        }
+
+        //TODO CRIS 
+        private void ShowAddFaceDialog(Recognition recognition)
+        {
+            /*
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                LayoutInflater inflater = getLayoutInflater();
+                View dialogLayout = inflater.inflate(R.layout.image_edit_dialog, null);
+                ImageView ivFace = dialogLayout.findViewById(R.id.dlg_image);
+                TextView tvTitle = dialogLayout.findViewById(R.id.dlg_title);
+                EditText etName = dialogLayout.findViewById(R.id.dlg_input);
+
+                tvTitle.setText("Add Face");
+                ivFace.setImageBitmap(rec.getCrop());
+                etName.setHint("Input name");
+
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener(){
+                    @Override
+                    public void onClick(DialogInterface dlg, int i) {
+
+                        String name = etName.getText().toString();
+                        if (name.isEmpty()) {
+                            return;
+                        }
+                        detector.register(name, rec);
+                        //knownFaces.put(name, rec);
+                        dlg.dismiss();
+                    }
+                });
+                builder.setView(dialogLayout);
+                builder.show();
+             */
+        }
+
+        // Which detection model to use: by default uses Tensorflow Object Detection API frozen
+        // checkpoints.
+        private enum DetectorMode
+        {
+            TF_OD_API,
+        }
     }
+
+
 }
