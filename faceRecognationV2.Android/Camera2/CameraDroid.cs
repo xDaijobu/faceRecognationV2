@@ -100,7 +100,7 @@ namespace faceRecognationV2.Droid.Camera2
             var view = inflater.Inflate(Resource.Layout.CameraLayout, this);
 
             _cameraTexture = view.FindViewById<AutoFitTextureView>(Resource.Id.CameraTexture);
-            _faceDetectBoundsView = view.FindViewById<FaceBoundsView>(Resource.Id.FaceDetectBounds);
+            //_faceDetectBoundsView = view.FindViewById<FaceBoundsView>(Resource.Id.FaceDetectBounds);
 
 
             _cameraTexture.SurfaceTextureListener = this;

@@ -23,7 +23,7 @@ namespace faceRecognationV2.Droid.Camera2
                 buffer.Get(imageData);
 
                 //diremark dl
-                //Photo?.Invoke(this, imageData);
+                Photo?.Invoke(this, imageData);
 
             }
             catch (Exception)

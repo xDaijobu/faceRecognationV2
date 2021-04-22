@@ -2,6 +2,7 @@
 using Android.Hardware.Camera2;
 using Android.Hardware.Camera2.Params;
 using Java.Lang;
+using System.Diagnostics;
 
 namespace faceRecognationV2.Droid.Camera2
 {
@@ -22,17 +23,19 @@ namespace faceRecognationV2.Droid.Camera2
             {
                 case CameraDroid.STATE_PREVIEW:
                     {
+                        Debug.WriteLine("CameraDroid.STATE_PREVIEW");
+
                         var f = result.Get(CaptureResult.StatisticsFaces);
                         Face[] faces = f.ToArray<Face>();
                         if (faces.Length > 0)
                         {
-                            //System.Diagnostics.Debug.WriteLine($"Faces: {faces.Length}");
+                            Debug.WriteLine($"Faces: {faces.Length}");
                             ////faces[0].Bounds a.k.a RECT
                             ////faces[0].Id a.k.a PK
-                            //owner.mState = CameraDroid.STATE_PICTURE_TAKEN;
-                            //owner.TakePhoto();
+                            owner.mState = CameraDroid.STATE_PICTURE_TAKEN;
+                            owner.TakePhoto();
 
-                            //System.Diagnostics.Debug.WriteLine("OnFacesDetected");
+                            System.Diagnostics.Debug.WriteLine("OnFacesDetected");
                             //CameraDetector.OnFacesDetected(1, faces.ToList(), true);
 
                             //System.Diagnostics.Debug.WriteLine("ShowBoundsOnFace");
@@ -50,6 +53,7 @@ namespace faceRecognationV2.Droid.Camera2
                     }
                 case CameraDroid.STATE_WAITING_LOCK:
                     {
+                        Debug.WriteLine("CameraDroid.STATE_WAITING_LOCK");
                         Integer afState = (Integer)result.Get(CaptureResult.ControlAfState);
                         if (afState == null)
                         {
@@ -76,6 +80,7 @@ namespace faceRecognationV2.Droid.Camera2
                     }
                 case CameraDroid.STATE_WAITING_PRECAPTURE:
                     {
+                        Debug.WriteLine("CameraDroid.STATE_WAITING_PRECAPTURE");
                         // ControlAeState can be null on some devices
                         Integer aeState = (Integer)result.Get(CaptureResult.ControlAeState);
                         if (aeState == null ||
@@ -88,6 +93,7 @@ namespace faceRecognationV2.Droid.Camera2
                     }
                 case CameraDroid.STATE_WAITING_NON_PRECAPTURE:
                     {
+                        Debug.WriteLine("CameraDroid.STATE_WAITING_NON_PRECAPTURE");
                         // ControlAeState can be null on some devices
                         Integer aeState = (Integer)result.Get(CaptureResult.ControlAeState);
                         if (aeState == null || aeState.IntValue() != ((int)ControlAEState.Precapture))
