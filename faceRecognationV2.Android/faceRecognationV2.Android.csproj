@@ -70,8 +70,8 @@
     <Compile Include="Camera2\CameraCaptureStillPictureSessionCallback.cs" />
     <Compile Include="Camera2\CameraStateListener.cs" />
     <Compile Include="Camera2\ImageAvailableListener.cs" />
-    <Compile Include="CustomView\AutoFitTextureView.cs" />
-    <Compile Include="CustomView\FaceBoundsView.cs" />
+    <Compile Include="CustomViews\AutoFitTextureView.cs" />
+    <Compile Include="CustomViews\FaceBoundsView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AboutResources.txt" />
@@ -111,7 +111,7 @@
     <Folder Include="Renderers\" />
     <Folder Include="Camera2\" />
     <Folder Include="Resources\Layout\" />
-    <Folder Include="CustomView\" />
+    <Folder Include="CustomViews\" />
   </ItemGroup>
  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
 </Project>

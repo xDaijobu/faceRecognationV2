@@ -10,7 +10,7 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 using faceRecognationV2.Controls;
-using faceRecognationV2.Droid.CustomView;
+using faceRecognationV2.Droid.CustomViews;
 using Java.Lang;
 using Java.Util;
 

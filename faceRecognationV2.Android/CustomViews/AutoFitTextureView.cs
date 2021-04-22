@@ -4,7 +4,7 @@ using Android.Runtime;
 using Android.Util;
 using Android.Views;
 
-namespace faceRecognationV2.Droid.CustomView
+namespace faceRecognationV2.Droid.CustomViews
 {
     public class AutoFitTextureView : TextureView
     {
