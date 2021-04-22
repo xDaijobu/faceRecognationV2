@@ -63,6 +63,15 @@
     <Compile Include="MainActivity.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Renderers\CameraPreviewRenderer.cs" />
+    <Compile Include="Camera2\CameraDroid.cs" />
+    <Compile Include="Camera2\CameraCaptureListener.cs" />
+    <Compile Include="Camera2\CameraCaptureStateListener.cs" />
+    <Compile Include="Camera2\CameraCaptureStillPictureSessionCallback.cs" />
+    <Compile Include="Camera2\CameraStateListener.cs" />
+    <Compile Include="Camera2\ImageAvailableListener.cs" />
+    <Compile Include="CustomView\AutoFitTextureView.cs" />
+    <Compile Include="CustomView\FaceBoundsView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AboutResources.txt" />
@@ -87,12 +96,22 @@
     <AndroidResource Include="Resources\drawable\xamarin_logo.png" />
     <AndroidResource Include="Resources\drawable\icon_about.png" />
     <AndroidResource Include="Resources\drawable\icon_feed.png" />
+    <AndroidResource Include="Resources\Layout\CameraLayout.xml">
+      <SubType></SubType>
+      <Generator></Generator>
+    </AndroidResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\faceRecognationV2\faceRecognationV2.csproj">
       <Project>{C0B158FE-D173-4BF6-B519-C7D9292CC0A5}</Project>
       <Name>faceRecognationV2</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Renderers\" />
+    <Folder Include="Camera2\" />
+    <Folder Include="Resources\Layout\" />
+    <Folder Include="CustomView\" />
   </ItemGroup>
  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
 </Project>

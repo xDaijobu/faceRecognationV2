@@ -13,8 +13,6 @@
             FontSize="Medium"
             Text="{Binding CameraPermissionStatus}"
             TextColor="Black" />
-        <Label Text="helloasdasd" />
-        <Label Text="hellozxczxczxcz text a asd" />
         <Button Command="{Binding RequestCameraPermissionCommand}" Text="Request Permissions" />
         <Button Clicked="Button_Clicked" Text="Open Camera" />
 
