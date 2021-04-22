@@ -14,9 +14,15 @@ namespace faceRecognationV2.Droid.CustomViews
         {
         }
 
+        public OverlayView(Context context, IAttributeSet attrs) : base(context, attrs)
+        {
+        }
+
         public OverlayView(Context context, IAttributeSet attrs, int defStyle) : base(context, attrs, defStyle)
         {
         }
+
+
 
         public void AddCallback(DrawCallback callback)
         {
