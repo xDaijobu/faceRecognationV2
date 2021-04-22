@@ -11,7 +11,7 @@ namespace faceRecognationV2.Views
 
         void Button_Clicked(System.Object sender, System.EventArgs e)
         {
-            Navigation.PushModalAsync(new RecognationView());
+            Shell.Current.Navigation.PushAsync(new RecognationView());
         }
     }
 }

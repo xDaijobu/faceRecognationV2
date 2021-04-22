@@ -13,7 +13,7 @@ namespace faceRecognationV2.Views
 
         void Button_Clicked(object sender, EventArgs eventArgs)
         {
-            Navigation.PopModalAsync();
+            Shell.Current.Navigation.PopAsync();
         }
 
         void OnCameraClicked(object sender, EventArgs eventArgs)
